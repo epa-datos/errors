@@ -30,6 +30,7 @@ var httpStatusCodes = map[Code]int{
 	Conflict:        http.StatusConflict,
 	Unauthorized:    http.StatusUnauthorized,
 	TooManyRequests: http.StatusTooManyRequests,
+	DuplicatedEntry: http.StatusConflict,
 }
 
 var errpyCodes = map[int]Code{
