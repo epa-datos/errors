@@ -20,6 +20,7 @@ func Log(err error) {
 			"reason":        er.Message,
 			"trace":         er.StackTrace,
 			"severity_type": er.Severity,
+			"http_status":   er.Kind.HttpStatus,
 		})
 		displayError(logEntry, er)
 	} else {
@@ -35,17 +36,21 @@ func displayError(logEntry *log.Entry, err Error) {
 		logEntry.Error(err.Message)
 	case DebugSeverity:
 		logEntry.Debug(err.Message)
+	case InfoSeverity:
+		logEntry.Info(err.Message)
+	default:
+		logEntry.Error(err.Message)
 	}
 }
 
 func getSeverityFromCode(code Code) Severity {
 	switch code {
-	case InternalError:
+	case InternalError, GatewayTimeout, ServiceUnavailable, ExternalServiceUnavailable:
 		return ErrorSeverity
-	case BadRequest:
+	case BadRequest, UnprocessableEntity, UnsupportedMediaType:
 		return WarningSeverity
-	case NotFound:
-		return ErrorSeverity
+	case NotFound, MaintenanceMode, RequestTimeout:
+		return InfoSeverity
 	}
 	return ErrorSeverity
 }
