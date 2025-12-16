@@ -57,6 +57,8 @@ func Build(args ...interface{}) error {
 		newError.Severity = getSeverityFromCode(newError.Kind.Code)
 	}
 
+	newError.Kind.HttpStatus = newError.getHttpStatusCode()
+
 	newError.Wrap(newError.Operation, newError.Message)
 
 	return newError
@@ -68,23 +70,23 @@ func IsErrType(err error) bool {
 }
 
 func JSON(c *gin.Context, err error) {
+	Log(err)
 	e, IsErrType := err.(Error)
-	Log(e)
 	if !IsErrType {
-		c.JSON(httpStatusCodes[InternalError], nil)
+		c.JSON(http.StatusInternalServerError, nil)
 		return
 	}
 
-	if _, exists := httpStatusCodes[e.Kind.Code]; !exists {
-		c.JSON(httpStatusCodes[e.Kind.Code], nil)
-		return
+	statusCode := e.getHttpStatusCode()
+	if statusCode == 0 {
+		statusCode = http.StatusInternalServerError
 	}
 
 	switch e.Kind.Code {
 	case InternalError, MaintenanceMode, Undefined:
-		c.JSON(httpStatusCodes[e.Kind.Code], nil)
+		c.JSON(statusCode, nil)
 	default:
-		c.JSON(httpStatusCodes[e.Kind.Code], gin.H{
+		c.JSON(statusCode, gin.H{
 			"message": e.Message,
 		})
 	}
@@ -98,6 +100,10 @@ func GetHttpStatusCode(err error) int {
 }
 
 func (e Error) getHttpStatusCode() int {
+	if e.Kind.HttpStatus != 0 {
+		return e.Kind.HttpStatus
+	}
+
 	if httpCode, codeExists := httpStatusCodes[e.Kind.Code]; codeExists {
 		return httpCode
 	}
